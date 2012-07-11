@@ -15,6 +15,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -59,7 +60,7 @@ func FindEndpoints(dir string) (oldest, newest uint64, err error) {
 // Gets tweets from max_id backwards.
 // max_id==0 means latest tweet.
 func GetTweets(user string, max_id uint64, since_id uint64) (tweets []map[string]interface{}, err error) {
-	args := map[string][]string{
+	args := url.Values{
 		"screen_name":      []string{user},
 		"trim_user":        []string{"true"},
 		"include_rts":      []string{"true"},
@@ -72,7 +73,7 @@ func GetTweets(user string, max_id uint64, since_id uint64) (tweets []map[string
 	if since_id != 0 {
 		args["since_id"] = []string{strconv.FormatUint(since_id, 10)}
 	}
-	query := http.EncodeQuery(args)
+	query := args.Encode()
 	url := "http://api.twitter.com/1/statuses/user_timeline.json?" + query
 	log.Printf("Fetching url %v\n", url)
 	r, err := http.Get(url)
