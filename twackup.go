@@ -27,7 +27,8 @@ func FindEndpoints(dir string) (oldest, newest uint64, err error) {
 	}
 	defer file.Close()
 	for {
-		list, err := file.Readdirnames(1000)
+		var list []string
+		list, err = file.Readdirnames(1000)
 		if err != nil {
 			return
 		}
@@ -157,7 +158,7 @@ func SaveTweet(dir string, tweet map[string]interface{}) (id uint64, err error) 
 
 // Get tweets backwards in history until end of time (or Twitter API
 // limit).
-func getOldTweets(dir string, user string, oldest uint64) (err error) {
+func getOldTweets(dir string, user string, oldest uint64) (error) {
 	for {
 		var max_id uint64
 		if oldest != 0 {
@@ -167,7 +168,7 @@ func getOldTweets(dir string, user string, oldest uint64) (err error) {
 		}
 		tweets, err := GetTweets(user, max_id, 0)
 		if err != nil {
-			return
+			return err
 		}
 		if len(tweets) == 0 {
 			break
@@ -175,22 +176,22 @@ func getOldTweets(dir string, user string, oldest uint64) (err error) {
 		for _, tweet := range tweets {
 			_, err := SaveTweet(dir, tweet)
 			if err != nil {
-				return
+				return err
 			}
 		}
 		oldest, err = IdFromTweet(tweets[len(tweets)-1])
 		if err != nil {
-			return
+			return err
 		}
 		log.Printf("Saved %d old tweets\n", len(tweets))
 	}
-	return
+	return nil
 }
 
 // Get tweets forwards in time; since Twitter gives you the *latest*
 // chunk, not the oldest chunk, we need to save these to disk in
 // reverse order.
-func getNewTweets(dir string, user string, newest uint64) (err error) {
+func getNewTweets(dir string, user string, newest uint64) (error) {
 	// gather them in RAM
 	var tweets []map[string]interface{}
 	for {
@@ -200,7 +201,7 @@ func getNewTweets(dir string, user string, newest uint64) (err error) {
 		}
 		chunk, err := GetTweets(user, 0, since_id)
 		if err != nil {
-			return
+			return err
 		}
 		if len(chunk) == 0 {
 			break
@@ -209,7 +210,7 @@ func getNewTweets(dir string, user string, newest uint64) (err error) {
 
 		newest, err = IdFromTweet(tweets[0])
 		if err != nil {
-			return
+			return err
 		}
 	}
 
@@ -218,11 +219,11 @@ func getNewTweets(dir string, user string, newest uint64) (err error) {
 		tweet := tweets[i]
 		_, err := SaveTweet(dir, tweet)
 		if err != nil {
-			return
+			return err
 		}
 	}
 	log.Printf("Saved %d new tweets\n", len(tweets))
-	return
+	return nil
 }
 
 func main() {
