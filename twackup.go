@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -30,6 +31,10 @@ func FindEndpoints(dir string) (oldest, newest uint64, err error) {
 	for {
 		var list []string
 		list, err = file.Readdirnames(1000)
+		if err == io.EOF {
+			err = nil
+			break
+		}
 		if err != nil {
 			return
 		}
@@ -238,7 +243,7 @@ func main() {
 
 	oldest, newest, err := FindEndpoints(dir)
 	if err != nil {
-		log.Fatalf("%s: %s", os.Args[0], err)
+		log.Fatalf("%s: Error in handling old tweets: %s", os.Args[0], err)
 	}
 
 	// usually prioritize fetching new tweets first, but not on
