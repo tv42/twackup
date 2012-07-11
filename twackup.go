@@ -15,6 +15,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"mime"
 	"net/http"
 	"net/url"
 	"os"
@@ -86,7 +87,14 @@ func GetTweets(user string, max_id uint64, since_id uint64) (tweets []map[string
 		return
 	}
 	ctype := r.Header.Get("Content-Type")
-	if ctype != "application/json; charset=utf-8" {
+	mtype, params, err := mime.ParseMediaType(ctype)
+	if mtype != "application/json" {
+		log.Printf("Response is not JSON: %q", ctype)
+		return
+	}
+	charset, ok := params["charset"]
+	if ok && charset != "utf-8" {
+		log.Printf("JSON has to be UTF-8: %q", ctype)
 		return
 	}
 
