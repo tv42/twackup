@@ -172,7 +172,7 @@ func SaveTweet(dir string, tweet map[string]interface{}) (id uint64, err error) 
 
 // Get tweets backwards in history until end of time (or Twitter API
 // limit).
-func getOldTweets(dir string, user string, oldest uint64) (error) {
+func getOldTweets(dir string, user string, oldest uint64) error {
 	for {
 		var max_id uint64
 		if oldest != 0 {
@@ -205,7 +205,7 @@ func getOldTweets(dir string, user string, oldest uint64) (error) {
 // Get tweets forwards in time; since Twitter gives you the *latest*
 // chunk, not the oldest chunk, we need to save these to disk in
 // reverse order.
-func getNewTweets(dir string, user string, newest uint64) (error) {
+func getNewTweets(dir string, user string, newest uint64) error {
 	// gather them in RAM
 	var tweets []map[string]interface{}
 	for {
