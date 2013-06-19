@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/kurrik/twittergo"
 	"io"
 	"io/ioutil"
 	"log"
@@ -65,7 +66,7 @@ func FindEndpoints(dir string) (oldest, newest uint64, err error) {
 
 // Gets tweets from max_id backwards.
 // max_id==0 means latest tweet.
-func GetTweets(user string, max_id uint64, since_id uint64) (tweets []map[string]interface{}, err error) {
+func GetTweets(client *twittergo.Client, user string, max_id uint64, since_id uint64) (tweets []map[string]interface{}, err error) {
 	args := url.Values{
 		"screen_name":      []string{user},
 		"trim_user":        []string{"true"},
@@ -80,9 +81,15 @@ func GetTweets(user string, max_id uint64, since_id uint64) (tweets []map[string
 		args["since_id"] = []string{strconv.FormatUint(since_id, 10)}
 	}
 	query := args.Encode()
-	url := "http://api.twitter.com/1/statuses/user_timeline.json?" + query
+	url := "https://api.twitter.com/1.1/statuses/user_timeline.json?" + query
+
+	var req *http.Request
+	req, err = http.NewRequest("GET", url, nil)
+	if err != nil {
+		return
+	}
 	log.Printf("Fetching url %v\n", url)
-	r, err := http.Get(url)
+	r, err := client.SendRequest(req)
 	if err != nil {
 		return
 	}
@@ -172,7 +179,7 @@ func SaveTweet(dir string, tweet map[string]interface{}) (id uint64, err error) 
 
 // Get tweets backwards in history until end of time (or Twitter API
 // limit).
-func getOldTweets(dir string, user string, oldest uint64) error {
+func getOldTweets(client *twittergo.Client, dir string, user string, oldest uint64) error {
 	for {
 		var max_id uint64
 		if oldest != 0 {
@@ -180,7 +187,7 @@ func getOldTweets(dir string, user string, oldest uint64) error {
 			// the one we have
 			max_id = oldest - 1
 		}
-		tweets, err := GetTweets(user, max_id, 0)
+		tweets, err := GetTweets(client, user, max_id, 0)
 		if err != nil {
 			return err
 		}
@@ -205,7 +212,7 @@ func getOldTweets(dir string, user string, oldest uint64) error {
 // Get tweets forwards in time; since Twitter gives you the *latest*
 // chunk, not the oldest chunk, we need to save these to disk in
 // reverse order.
-func getNewTweets(dir string, user string, newest uint64) error {
+func getNewTweets(client *twittergo.Client, dir string, user string, newest uint64) error {
 	// gather them in RAM
 	var tweets []map[string]interface{}
 	for {
@@ -213,7 +220,7 @@ func getNewTweets(dir string, user string, newest uint64) error {
 		if newest != 0 {
 			since_id = newest
 		}
-		chunk, err := GetTweets(user, 0, since_id)
+		chunk, err := GetTweets(client, user, 0, since_id)
 		if err != nil {
 			return err
 		}
@@ -249,6 +256,13 @@ func main() {
 	user := os.Args[1]
 	dir := os.Args[2]
 
+	config, err := LoadConfig()
+	if err != nil {
+		log.Fatalf("%s: Error loading config: %s", os.Args[0], err)
+	}
+
+	client := GetCredentials(config)
+
 	oldest, newest, err := FindEndpoints(dir)
 	if err != nil {
 		log.Fatalf("%s: Error in handling old tweets: %s", os.Args[0], err)
@@ -259,9 +273,9 @@ func main() {
 	// getOldTweets is more efficient
 	if newest != 0 {
 		log.Printf("Fetching tweets newer than %d\n", newest)
-		getNewTweets(dir, user, newest)
+		getNewTweets(client, dir, user, newest)
 	}
 
 	log.Printf("Fetching tweets older than %d\n", oldest)
-	getOldTweets(dir, user, oldest)
+	getOldTweets(client, dir, user, oldest)
 }
