@@ -2,12 +2,13 @@ package main
 
 import (
 	"errors"
-	"github.com/kurrik/oauth1a"
-	"github.com/kurrik/twittergo"
 	"io/ioutil"
-	"launchpad.net/goyaml"
 	"os"
 	"path/filepath"
+
+	"github.com/kurrik/oauth1a"
+	"github.com/kurrik/twittergo"
+	"launchpad.net/goyaml"
 )
 
 type Config struct {

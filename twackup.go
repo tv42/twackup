@@ -12,7 +12,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/kurrik/twittergo"
 	"io"
 	"io/ioutil"
 	"log"
@@ -22,6 +21,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/kurrik/twittergo"
 )
 
 func FindEndpoints(dir string) (oldest, newest uint64, err error) {
